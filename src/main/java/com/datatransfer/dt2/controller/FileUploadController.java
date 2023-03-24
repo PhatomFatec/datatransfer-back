@@ -41,7 +41,7 @@ public class FileUploadController {
 		fileMetadata.setName("photo.jpg");
 		fileMetadata.setParents(list);
 		// File's content.
-		java.io.File filePath = new java.io.File("../Captura de tela 2023-03-15 192348.png");
+		java.io.File filePath = new java.io.File("C:\\Users\\igor_\\OneDrive\\Área de Trabalho\\datatransfer-back\\src\\main\\resources\\blue_balloons.png");
 		// Specify media type and file-path for file.
 		FileContent mediaContent = new FileContent("image/png", filePath);
 		try {
