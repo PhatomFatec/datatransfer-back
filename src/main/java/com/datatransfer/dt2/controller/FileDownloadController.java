@@ -69,8 +69,8 @@ public class FileDownloadController {
 		FileContent mediaContent = new FileContent("multipart/form-data", filePath); 
 		service.files().create(fileMetadata, mediaContent).setFields("id").execute();
 	    return ResponseEntity.ok()
-	        .headers(headers)
-	        .contentType(MediaType.parseMediaType(file.getMimeType()))
+	        //.headers(headers)
+	        //.contentType(MediaType.parseMediaType(file.getMimeType()))
 	        .body(resource);
 	}
 

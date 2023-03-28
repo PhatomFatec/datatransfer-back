@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,8 @@ import com.google.auth.oauth2.GoogleCredentials;
 @RestController
 public class FileUploadController {
 
+	@Autowired
+	private FileDownloadController fileDownload;
 	
 	@PostMapping("/upload")
 	public ResponseEntity<?> uploadBasic(@RequestParam("file") MultipartFile file)
@@ -49,10 +52,12 @@ public class FileUploadController {
 		file.transferTo(new java.io.File(filePathd));
 		
 		java.io.File filePath = new java.io.File(filePathd);
-		System.out.println(filePath.getCanonicalPath());
 		FileContent mediaContent = new FileContent("multipart/form-data", filePath); 
 		File files = service.files().create(fileMetadata, mediaContent).setFields("id").execute();
 		System.out.println("File ID: " + files.getId());
+		
+		fileDownload.getFile("1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF", files.getId());
+		
 		return ResponseEntity.status(HttpStatus.OK).body(files);
 	}
 }
