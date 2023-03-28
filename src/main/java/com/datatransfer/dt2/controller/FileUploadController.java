@@ -1,6 +1,17 @@
 package com.datatransfer.dt2.controller;
 
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.google.api.client.http.FileContent;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -10,19 +21,14 @@ import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class FileUploadController {
+
 	
 	@PostMapping("/upload")
-	public static String uploadBasic() throws IOException {
+	public ResponseEntity<?> uploadBasic(@RequestParam("file") MultipartFile file)
+			throws IOException {
 		// Load pre-authorized user credentials from the environment.
 		// TODO(developer) - See https://developers.google.com/identity for
 		// guides on implementing OAuth2 for your application.
@@ -33,25 +39,20 @@ public class FileUploadController {
 		// Build a new authorized API client service.
 		Drive service = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
 				.setApplicationName("Drive samples").build();
-		// Upload file photo.jpg on drive.
+		
 		List<String> list = new ArrayList<>();
 		list.add("1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF");
 		File fileMetadata = new File();
-		
-		fileMetadata.setName("photo.jpg");
 		fileMetadata.setParents(list);
-		// File's content.
-		java.io.File filePath = new java.io.File("C:\\Users\\igor_\\OneDrive\\Área de Trabalho\\datatransfer-back\\src\\main\\resources\\blue_balloons.png");
-		// Specify media type and file-path for file.
-		FileContent mediaContent = new FileContent("image/png", filePath);
-		try {
-			File file = service.files().create(fileMetadata, mediaContent).setFields("id").execute();
-			System.out.println("File ID: " + file.getId());
-			return file.getId();
-		} catch (GoogleJsonResponseException e) {
-			// TODO(developer) - handle error appropriately
-			System.err.println("Unable to upload file: " + e.getDetails());
-			throw e;
-		}
+		fileMetadata.setName(file.getOriginalFilename());
+		String filePathd = new java.io.File(".").getCanonicalPath() + file.getOriginalFilename();
+		file.transferTo(new java.io.File(filePathd));
+		
+		java.io.File filePath = new java.io.File(filePathd);
+		System.out.println(filePath.getCanonicalPath());
+		FileContent mediaContent = new FileContent("multipart/form-data", filePath); 
+		File files = service.files().create(fileMetadata, mediaContent).setFields("id").execute();
+		System.out.println("File ID: " + files.getId());
+		return ResponseEntity.status(HttpStatus.OK).body(files);
 	}
 }
