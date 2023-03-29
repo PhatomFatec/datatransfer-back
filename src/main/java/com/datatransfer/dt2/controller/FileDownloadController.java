@@ -3,17 +3,19 @@ package com.datatransfer.dt2.controller;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
+import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.api.client.http.FileContent;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
@@ -30,7 +32,7 @@ public class FileDownloadController {
 
 
 	@GetMapping("/{folderId}/{fileId}")
-	public ResponseEntity<byte[]> getFile(@PathVariable String folderId,@PathVariable String fileId) throws IOException {
+	public ResponseEntity<?> getFile(@PathVariable String folderId,@PathVariable String fileId) throws IOException {
 		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
 				.createScoped(Arrays.asList(DriveScopes.DRIVE_FILE));
 		HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
@@ -49,9 +51,26 @@ public class FileDownloadController {
 			outputStream.write(buffer, 0, bytesRead);
 		}
 
-		String base64Content = Base64.getEncoder().encodeToString(outputStream.toByteArray());
+		byte[] fileBytes = outputStream.toByteArray();
+	    ByteArrayResource resource = new ByteArrayResource(fileBytes);
 
-		return ResponseEntity.status(HttpStatus.OK).body(base64Content.getBytes());
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"");
+	    
+		List<String> list = new ArrayList<>();
+		list.add("1FjskLDiE83qQLFIckmk4YffdyyvOJgWY");
+		File fileMetadata = new File();
+		fileMetadata.setParents(list);
+		fileMetadata.setName(file.getName());
+		String filePathd = new java.io.File(".").getCanonicalPath() + file.getName();
+		
+		java.io.File filePath = new java.io.File(filePathd);
+		FileContent mediaContent = new FileContent("multipart/form-data", filePath); 
+		service.files().create(fileMetadata, mediaContent).setFields("id").execute();
+	    return ResponseEntity.ok()
+	        //.headers(headers)
+	        //.contentType(MediaType.parseMediaType(file.getMimeType()))
+	        .body(resource);
 	}
 
 
