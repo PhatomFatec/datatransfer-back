@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.dt.fatec.models.Credentials;
-import com.dt.fatec.services.CredentialService;
+import com.datatransfer.dt2.models.Credentials;
+import com.datatransfer.dt2.services.CredentialService;
 
 @RestController
 @RequestMapping(value = "/credentials")

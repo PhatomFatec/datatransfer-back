@@ -1,4 +1,4 @@
-package com.datatransfer.dt2.serives;
+package com.datatransfer.dt2.services;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;

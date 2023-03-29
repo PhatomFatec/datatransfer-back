@@ -20,8 +20,6 @@
 	</properties>
 	<dependencies>
 		<dependency>
-<<<<<<< HEAD
-=======
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
@@ -32,7 +30,6 @@
 			<version>3.1.0</version>
 		</dependency>
 		<dependency>
->>>>>>> 80ea8615d381735abe18d8d8e8cf3b660b013a06
 			<groupId>com.google.cloud</groupId>
 			<artifactId>spring-cloud-gcp-starter-storage</artifactId>
 		</dependency>
@@ -80,11 +77,6 @@
 			<version>1.35.1</version>
 		</dependency>
 		<dependency>
-<<<<<<< HEAD
-			<groupId>com.dt</groupId>
-			<artifactId>fatec</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-=======
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
 			<scope>runtime</scope>
@@ -93,7 +85,6 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
->>>>>>> 80ea8615d381735abe18d8d8e8cf3b660b013a06
 		</dependency>
 	</dependencies>
 	<dependencyManagement>
