@@ -1,11 +1,14 @@
 package com.datatransfer.dt2.models;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 @Entity
 public class Credentials {
 	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
 	private String client_id;
@@ -71,5 +74,3 @@ public class Credentials {
 	}
 
 }
-
-
