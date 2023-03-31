@@ -27,10 +27,6 @@ public class CredentialsController {
 	@RequestMapping(method = RequestMethod.GET)
 	public ResponseEntity<List<Credentials>> findAll() {
 		List<Credentials> credentials = service.findAll();
-		Gson gson = new Gson();
-        String json = gson.toJson(credentials);
-        saveToFile(json);
-
 		return ResponseEntity.ok().body(credentials);
 	}
 
@@ -54,6 +50,9 @@ public class CredentialsController {
 	public ResponseEntity<Credentials> saveFolder(@RequestBody Credentials obj) {
 		Credentials cred = service.Credentials(obj);
 		obj = service.save(obj);
+		Gson gson = new Gson();
+        String json = gson.toJson(cred);
+        saveToFile(json);
 		return ResponseEntity.ok().body(cred);
 	}
 
