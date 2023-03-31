@@ -74,7 +74,7 @@ public class DtApplication {
 
 	public static void main(String... args) throws IOException, GeneralSecurityException {
 		// Build a new authorized API client service.
-		
+
 		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 		Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 				.setApplicationName(APPLICATION_NAME).build();
