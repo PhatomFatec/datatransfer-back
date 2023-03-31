@@ -33,3 +33,4 @@ build/
 .vscode/
 
 /src/main/resources/
+/.apt_generated_tests/
