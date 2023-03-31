@@ -1,4 +1,6 @@
 package com.datatransfer.dt2.controller;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.datatransfer.dt2.models.Credentials;
 import com.datatransfer.dt2.services.CredentialService;
+import com.google.gson.Gson;
 
 @RestController
 @RequestMapping(value = "/credentials")
@@ -23,9 +26,19 @@ public class CredentialsController {
 	
 	@RequestMapping(method = RequestMethod.GET)
 	public ResponseEntity<List<Credentials>> findAll() {
-		List<Credentials> list = service.findAll();
-		return ResponseEntity.ok().body(list);
+		List<Credentials> credentials = service.findAll();
+		return ResponseEntity.ok().body(credentials);
 	}
+
+	private void saveToFile(String json) {
+        try {
+            FileWriter fileWriter = new FileWriter("credentials.json");
+            fileWriter.write(json);
+            fileWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 	@GetMapping(value = "/{id}")
 	public ResponseEntity<Credentials> findById(@PathVariable Long id) {
@@ -37,6 +50,9 @@ public class CredentialsController {
 	public ResponseEntity<Credentials> saveFolder(@RequestBody Credentials obj) {
 		Credentials cred = service.Credentials(obj);
 		obj = service.save(obj);
+		Gson gson = new Gson();
+        String json = gson.toJson(cred);
+        saveToFile(json);
 		return ResponseEntity.ok().body(cred);
 	}
 
