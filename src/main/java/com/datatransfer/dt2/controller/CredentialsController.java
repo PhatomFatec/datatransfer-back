@@ -1,6 +1,7 @@
 package com.datatransfer.dt2.controller;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.datatransfer.dt2.models.Credentials;
+import com.datatransfer.dt2.dtos.*;
 import com.datatransfer.dt2.services.CredentialService;
 import com.google.gson.Gson;
 
@@ -32,8 +34,8 @@ public class CredentialsController {
 
 	private void saveToFile(String json) {
         try {
-            FileWriter fileWriter = new FileWriter("credentials.json");
-            fileWriter.write(json);
+            FileWriter fileWriter = new FileWriter("credenciais.json");
+            fileWriter.write("{\"web\":" +json +"}");
             fileWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -47,13 +49,13 @@ public class CredentialsController {
 	}
 
 	@PostMapping
-	public ResponseEntity<Credentials> saveFolder(@RequestBody Credentials obj) {
-		Credentials cred = service.Credentials(obj);
-		obj = service.save(obj);
+	public ResponseEntity<CredentialsDTO> saveCred(@RequestBody CredentialsDTO obj) {
+		Credentials cred = service.FromDTO(obj);
+		cred = service.save(cred);
 		Gson gson = new Gson();
-        String json = gson.toJson(cred);
+        String json = gson.toJson(obj);
         saveToFile(json);
-		return ResponseEntity.ok().body(cred);
+		return ResponseEntity.ok().body(obj);
 	}
 
 }

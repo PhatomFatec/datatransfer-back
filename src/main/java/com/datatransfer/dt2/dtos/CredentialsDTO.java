@@ -1,21 +1,10 @@
-package com.datatransfer.dt2.models;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.EqualsAndHashCode;
+package com.datatransfer.dt2.dtos;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
-@EqualsAndHashCode
 @Setter
-@Entity
-public class Credentials {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+public class CredentialsDTO {
 
 	private String client_id;
 
@@ -31,12 +20,8 @@ public class Credentials {
 	
 	private String auth_provider_x509_cert_url;
 
-	public Credentials() {
 
-	}
-
-	public Credentials(String client_id, String client_secret, String project_id, String redirect_uris) {
-	
+	public CredentialsDTO(String client_id, String client_secret, String project_id, String redirect_uris) {
 		this.client_id = client_id;
 		this.client_secret = client_secret;
 		this.project_id = project_id;
