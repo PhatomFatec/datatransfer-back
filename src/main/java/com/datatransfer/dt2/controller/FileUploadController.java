@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.datatransfer.dt2.models.Folders;
+import com.datatransfer.dt2.models.FoldersSelect;
 import com.datatransfer.dt2.repositories.FoldersSelectRepository;
 import com.datatransfer.dt2.services.FolderSelectService;
 import com.google.api.client.http.FileContent;
@@ -67,7 +68,7 @@ public class FileUploadController {
 		File files = service.files().create(fileMetadata, mediaContent).setFields("id").execute();
 		System.out.println("File ID: " + files.getId());
 		
-		Folders fol = folderService.findById(repo.findAll().get(0).getId());
+		FoldersSelect fol = folderService.findById(repo.findAll().get(0).getId());
 		fileDownload.getFile(fol.getCodigo(), files.getId());
 		
 		return ResponseEntity.status(HttpStatus.OK).body(files);
