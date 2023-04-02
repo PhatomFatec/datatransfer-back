@@ -10,7 +10,6 @@ import com.datatransfer.dt2.dtos.CredentialsDTO;
 import com.datatransfer.dt2.models.Credentials;
 import com.datatransfer.dt2.repositories.CredentialsRepository;
 
-
 @Service
 public class CredentialService {
 
@@ -30,11 +29,8 @@ public class CredentialService {
 		return repository.save(obj);
 	}
 
-
-	public Credentials FromDTO(CredentialsDTO objDto){
-		return new Credentials(objDto.getClient_id(), objDto.getClient_secret(), objDto.getProject_id(),objDto.getRedirect_uris());
+	public Credentials FromDTO(CredentialsDTO objDto) {
+		return new Credentials(objDto.getClient_id(), objDto.getClient_secret(), objDto.getProject_id(),
+				objDto.getRedirectUriss());
 	}
 }
-
-
-
