@@ -1,4 +1,5 @@
 package com.datatransfer.dt2.controller;
+
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.datatransfer.dt2.models.Folders;
+import com.datatransfer.dt2.repositories.FoldersSelectRepository;
 import com.datatransfer.dt2.services.FolderService;
-
 
 @CrossOrigin
 @RestController
@@ -23,6 +24,9 @@ public class FoldersController {
 
 	@Autowired
 	private FolderService service;
+
+	@Autowired
+	private FoldersSelectRepository selectService;
 
 	@RequestMapping(method = RequestMethod.GET)
 	public ResponseEntity<List<Folders>> findAll() {
@@ -40,6 +44,13 @@ public class FoldersController {
 	public ResponseEntity<Folders> saveFolder(@RequestBody Folders obj) {
 		Folders folder = service.Folders(obj);
 		obj = service.save(obj);
+		return ResponseEntity.ok().body(folder);
+	}
+
+	@PostMapping("/select")
+	public ResponseEntity<Folders> saveFolderSelect(@RequestBody Folders obj) {
+		Folders folder = service.Folders(obj);
+		obj = selectService.save(obj);
 		return ResponseEntity.ok().body(folder);
 	}
 

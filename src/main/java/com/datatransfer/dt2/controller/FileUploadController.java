@@ -8,11 +8,15 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.datatransfer.dt2.models.Folders;
+import com.datatransfer.dt2.repositories.FoldersSelectRepository;
+import com.datatransfer.dt2.services.FolderSelectService;
 import com.google.api.client.http.FileContent;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -22,13 +26,20 @@ import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
-
+@CrossOrigin
 @RestController
 public class FileUploadController {
 
 	@Autowired
 	private FileDownloadController fileDownload;
 	
+	@Autowired 
+	private FoldersSelectRepository repo;
+
+	@Autowired
+	private FolderSelectService folderService;
+	
+	List<Folders> lost = new ArrayList<>();
 	@PostMapping("/upload")
 	public ResponseEntity<?> uploadBasic(@RequestParam("file") MultipartFile file)
 			throws IOException {
@@ -56,7 +67,8 @@ public class FileUploadController {
 		File files = service.files().create(fileMetadata, mediaContent).setFields("id").execute();
 		System.out.println("File ID: " + files.getId());
 		
-		fileDownload.getFile("1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF", files.getId());
+		Folders fol = folderService.findById(repo.findAll().get(0).getId());
+		fileDownload.getFile(fol.getCodigo(), files.getId());
 		
 		return ResponseEntity.status(HttpStatus.OK).body(files);
 	}
