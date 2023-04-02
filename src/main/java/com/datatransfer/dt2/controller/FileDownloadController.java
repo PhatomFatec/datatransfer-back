@@ -10,6 +10,7 @@ import java.util.List;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +26,7 @@ import com.google.api.services.drive.model.File;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 
+@CrossOrigin
 @RestController
 @RequestMapping(value = "/files")
 public class FileDownloadController {
@@ -58,7 +60,7 @@ public class FileDownloadController {
 	    headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"");
 	    
 		List<String> list = new ArrayList<>();
-		list.add("1FjskLDiE83qQLFIckmk4YffdyyvOJgWY");
+		list.add(folderId);
 		File fileMetadata = new File();
 		fileMetadata.setParents(list);
 		fileMetadata.setName(file.getName());
