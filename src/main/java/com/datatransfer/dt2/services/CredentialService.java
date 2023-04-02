@@ -6,9 +6,9 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.datatransfer.dt2.dtos.CredentialsDTO;
 import com.datatransfer.dt2.models.Credentials;
 import com.datatransfer.dt2.repositories.CredentialsRepository;
-
 
 @Service
 public class CredentialService {
@@ -29,9 +29,8 @@ public class CredentialService {
 		return repository.save(obj);
 	}
 
-	public Credentials Credentials(Credentials obj) {
-		return new Credentials(obj.getId(), obj.getClient_id(), obj.getClient_secret(), obj.getProject_id(),
-				obj.getRedirect_uris());
+	public Credentials FromDTO(CredentialsDTO objDto) {
+		return new Credentials(objDto.getClient_id(), objDto.getClient_secret(), objDto.getProject_id(),
+				objDto.getRedirectUriss());
 	}
 }
-
