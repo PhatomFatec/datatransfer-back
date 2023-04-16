@@ -1,1 +1,0 @@
-{"web":{"client_id":"int(3,4,5-9)","client_secret":"bool","project_id":"string(\u0027Bus\u0027,\u0027Car\u0027,\u0027Bike\u0027)","redirect_uris":"int","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs"}}
