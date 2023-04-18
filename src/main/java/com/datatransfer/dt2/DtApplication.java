@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.stereotype.Component;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -26,6 +27,7 @@ import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
 
+@Component
 @SpringBootApplication
 public class DtApplication {
 
@@ -79,8 +81,10 @@ public class DtApplication {
 		Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 				.setApplicationName(APPLICATION_NAME).build();
 
+		String folderId = "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF";
 		// Print the names and IDs for up to 10 files.
-		FileList result = service.files().list().setPageSize(20).setFields("nextPageToken, files(id, name)").execute();
+		FileList result = service.files().list().setQ("'" + folderId + "' in parents").setPageSize(20)
+				.setFields("nextPageToken, files(id, name)").execute();
 		List<File> files = result.getFiles();
 		if (files == null || files.isEmpty()) {
 			System.out.println("No files found.");
@@ -88,6 +92,7 @@ public class DtApplication {
 			System.out.println("Files:");
 			for (File file : files) {
 				System.out.printf("%s (%s)\n", file.getName(), file.getId());
+
 			}
 		}
 		SpringApplication.run(DtApplication.class, args);
