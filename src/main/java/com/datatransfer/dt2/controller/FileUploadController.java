@@ -20,11 +20,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.datatransfer.dt2.models.Folders;
+
 import com.datatransfer.dt2.models.FoldersSelect;
 import com.datatransfer.dt2.models.History;
 import com.datatransfer.dt2.repositories.FoldersSelectRepository;
 import com.datatransfer.dt2.services.FolderSelectService;
 import com.datatransfer.dt2.services.HistoryService;
+
 import com.google.api.client.http.FileContent;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -40,13 +42,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 public class FileUploadController {
 
 	@Autowired
-	private FileDownloadController fileDownload;
-
-	@Autowired
-	private FoldersSelectRepository repo;
-
-	@Autowired
-	private FolderSelectService folderService;
+	private UploadFileAwsController awsService;
 
 	@Autowired
 	private HistoryService historyService;
@@ -54,8 +50,8 @@ public class FileUploadController {
 	List<Folders> lost = new ArrayList<>();
 
 	@PostMapping("/upload")
-	public ResponseEntity<?> uploadBasic(@RequestParam("file") MultipartFile file)
-			throws IOException {
+	public ResponseEntity<?> uploadBasic(@RequestParam("file") MultipartFile file) throws IOException {
+
 		// Load pre-authorized user credentials from the environment.
 		// TODO(developer) - See https://developers.google.com/identity for
 		// guides on implementing OAuth2 for your application.
@@ -66,7 +62,11 @@ public class FileUploadController {
 		// Build a new authorized API client service.
 		Drive service = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
 				.setApplicationName("Drive samples").build();
+
+		awsService.uploadFile(file);
+
 		Instant inicio = Instant.now();
+
 		List<String> list = new ArrayList<>();
 		list.add("1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF");
 		File fileMetadata = new File();
@@ -77,6 +77,7 @@ public class FileUploadController {
 
 		java.io.File filePath = new java.io.File(filePathd);
 		FileContent mediaContent = new FileContent("multipart/form-data", filePath);
+
 		File files = service.files().create(fileMetadata, mediaContent).setFields("id").execute();
 
 		History history = new History();
@@ -85,13 +86,11 @@ public class FileUploadController {
 		history.setTamanho(file.getSize());
 		history.setData_envio(LocalDate.now());
 
-		FoldersSelect fol = folderService.findById(repo.findAll().get(0).getId());
-		fileDownload.getFile(fol.getCodigo(), files.getId());
-
 		Instant fim = Instant.now();
 		Long duracao = Duration.between(inicio, fim).getSeconds();
 		history.setTempo(duracao);
 		historyService.save(history);
+		service.files().delete(files.getId()).execute();
 		return ResponseEntity.status(HttpStatus.OK).body(files);
 
 	}
