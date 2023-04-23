@@ -19,14 +19,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
 import com.datatransfer.dt2.models.Folders;
-
-import com.datatransfer.dt2.models.FoldersSelect;
 import com.datatransfer.dt2.models.History;
-import com.datatransfer.dt2.repositories.FoldersSelectRepository;
-import com.datatransfer.dt2.services.FolderSelectService;
 import com.datatransfer.dt2.services.HistoryService;
-
 import com.google.api.client.http.FileContent;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
