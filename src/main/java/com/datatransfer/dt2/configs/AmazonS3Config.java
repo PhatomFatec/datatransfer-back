@@ -34,6 +34,5 @@ public class AmazonS3Config {
         return amazonS3;
     }
 
-    // ...
 }
 
