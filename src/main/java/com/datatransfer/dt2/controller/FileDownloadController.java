@@ -31,10 +31,8 @@ import com.google.auth.oauth2.GoogleCredentials;
 @RequestMapping(value = "/files")
 public class FileDownloadController {
 
-
-
 	@GetMapping("/{folderId}/{fileId}")
-	public ResponseEntity<?> getFile(@PathVariable String folderId,@PathVariable String fileId) throws IOException {
+	public ResponseEntity<?> getFile(@PathVariable String folderId, @PathVariable String fileId) throws IOException {
 		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
 				.createScoped(Arrays.asList(DriveScopes.DRIVE_FILE));
 		HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
@@ -42,7 +40,7 @@ public class FileDownloadController {
 		// Build a new authorized API client service.
 		Drive service = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
 				.setApplicationName("Drive samples").build();
-		
+
 		File file = service.files().get(fileId).execute();
 		InputStream content = service.files().get(fileId).executeMediaAsInputStream();
 
@@ -54,26 +52,25 @@ public class FileDownloadController {
 		}
 
 		byte[] fileBytes = outputStream.toByteArray();
-	    ByteArrayResource resource = new ByteArrayResource(fileBytes);
+		ByteArrayResource resource = new ByteArrayResource(fileBytes);
 
-	    HttpHeaders headers = new HttpHeaders();
-	    headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"");
-	    
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"");
+
 		List<String> list = new ArrayList<>();
 		list.add(folderId);
 		File fileMetadata = new File();
 		fileMetadata.setParents(list);
 		fileMetadata.setName(file.getName());
 		String filePathd = new java.io.File(".").getCanonicalPath() + file.getName();
-		
-		java.io.File filePath = new java.io.File(filePathd);
-		FileContent mediaContent = new FileContent("multipart/form-data", filePath); 
-		service.files().create(fileMetadata, mediaContent).setFields("id").execute();
-	    return ResponseEntity.ok()
-	        //.headers(headers)
-	        //.contentType(MediaType.parseMediaType(file.getMimeType()))
-	        .body(resource);
-	}
 
+		java.io.File filePath = new java.io.File(filePathd);
+		FileContent mediaContent = new FileContent("multipart/form-data", filePath);
+		service.files().create(fileMetadata, mediaContent).setFields("id").execute();
+		return ResponseEntity.ok()
+				// .headers(headers)
+				// .contentType(MediaType.parseMediaType(file.getMimeType()))
+				.body(resource);
+	}
 
 }
