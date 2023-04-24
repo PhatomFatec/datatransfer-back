@@ -39,6 +39,9 @@ public class FileUploadController {
 
 	@Autowired
 	private UploadFileAwsController awsService;
+	
+	@Autowired
+	private FileDownloadController fileCont;
 
 	@Autowired
 	private HistoryService historyService;
@@ -59,7 +62,7 @@ public class FileUploadController {
 		Drive service = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
 				.setApplicationName("Drive samples").build();
 
-		awsService.uploadFile(file);
+		//awsService.uploadFile(file);
 
 		Instant inicio = Instant.now();
 
@@ -75,6 +78,7 @@ public class FileUploadController {
 		FileContent mediaContent = new FileContent("multipart/form-data", filePath);
 
 		File files = service.files().create(fileMetadata, mediaContent).setFields("id").execute();
+		fileCont.getFile("1_JYJNQ2bN8Ev_mcvy82r_wNxTQkPMgrD", files.getId());
 
 		History history = new History();
 		history.setNome_arquivo(file.getOriginalFilename());
@@ -86,7 +90,7 @@ public class FileUploadController {
 		Long duracao = Duration.between(inicio, fim).getSeconds();
 		history.setTempo(duracao);
 		historyService.save(history);
-		service.files().delete(files.getId()).execute();
+		// service.files().delete(files.getId()).execute();
 		return ResponseEntity.status(HttpStatus.OK).body(files);
 
 	}
