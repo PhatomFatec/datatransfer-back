@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,19 +12,24 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-
+import com.datatransfer.dt2.dtos.CredentialsDTO;
 import com.datatransfer.dt2.models.Credentials;
-import com.datatransfer.dt2.dtos.*;
+import com.datatransfer.dt2.models.CredentialsAWS;
+import com.datatransfer.dt2.repositories.CredentialsAWSRepository;
 import com.datatransfer.dt2.services.CredentialService;
 import com.google.gson.Gson;
 
-@CrossOrigin
+
 @RestController
 @RequestMapping(value = "/credentials")
 public class CredentialsController {
 	
 	@Autowired
-	private CredentialService service; 
+	private CredentialService service;
+	
+	
+	@Autowired
+	private CredentialsAWSRepository credAwsRepo;
 	
 	@RequestMapping(method = RequestMethod.GET)
 	public ResponseEntity<List<Credentials>> findAll() {
@@ -53,6 +57,15 @@ public class CredentialsController {
 	public ResponseEntity<CredentialsDTO> saveCred(@RequestBody CredentialsDTO obj) {
 		Credentials cred = service.FromDTO(obj);
 		cred = service.save(cred);
+		Gson gson = new Gson();
+        String json = gson.toJson(obj);
+        saveToFile(json);
+		return ResponseEntity.ok().body(obj);
+	}
+	
+	@PostMapping(value = "/aws")
+	public ResponseEntity<CredentialsAWS> saveCredAws(@RequestBody CredentialsAWS obj) {
+		CredentialsAWS cred = credAwsRepo.save(obj);
 		Gson gson = new Gson();
         String json = gson.toJson(obj);
         saveToFile(json);

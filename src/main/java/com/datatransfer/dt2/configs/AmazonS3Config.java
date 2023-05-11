@@ -9,9 +9,31 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.datatransfer.dt2.models.CredentialsAWS;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@EqualsAndHashCode
+@Setter
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
 @Configuration
 public class AmazonS3Config {
+	
+	
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
     @Value("${aws.accessKey}")
     private String accessKey;
@@ -35,5 +57,6 @@ public class AmazonS3Config {
         return amazonS3;
     }
 
+    
 }
 
