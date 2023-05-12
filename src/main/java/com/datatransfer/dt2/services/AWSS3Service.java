@@ -36,5 +36,9 @@ public class AWSS3Service {
         // Retorna a URL como uma string
         return url.toString();
     }
+    
+    public void excluirObjetoS3(String nomeBucket, String nomeObjeto) {
+    	  amazonS3Client.deleteObject(nomeBucket, nomeObjeto);
+    	}
 
 }

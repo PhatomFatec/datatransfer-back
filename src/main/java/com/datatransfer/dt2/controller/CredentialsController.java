@@ -66,10 +66,7 @@ public class CredentialsController {
 	@PostMapping(value = "/aws")
 	public ResponseEntity<CredentialsAWS> saveCredAws(@RequestBody CredentialsAWS obj) {
 		CredentialsAWS cred = credAwsRepo.save(obj);
-		Gson gson = new Gson();
-        String json = gson.toJson(obj);
-        saveToFile(json);
-		return ResponseEntity.ok().body(obj);
+		return ResponseEntity.ok().body(cred);
 	}
 
 }

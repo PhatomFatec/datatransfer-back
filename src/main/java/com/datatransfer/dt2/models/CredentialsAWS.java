@@ -13,9 +13,9 @@ import lombok.Setter;
 @Getter
 @EqualsAndHashCode
 @Setter
-@Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
 public class CredentialsAWS {
 
 	@Id

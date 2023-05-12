@@ -28,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.datatransfer.dt2.DtApplication;
 import com.datatransfer.dt2.models.Folders;
 import com.datatransfer.dt2.models.History;
+import com.datatransfer.dt2.services.AWSS3Service;
 import com.datatransfer.dt2.services.HistoryService;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -54,21 +55,20 @@ public class FileUploadController {
 
 	@Autowired
 	private UploadFileAwsController awsService;
-
+	
 	@Autowired
-	private FileDownloadController fileCont;
+	private AWSS3Service aws;
 
 	@Autowired
 	private HistoryService historyService;
-	
-	
+
 	private static final String APPLICATION_NAME = "Google Drive API Java Quickstart";
 	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 	private static final String TOKENS_DIRECTORY_PATH = "tokens";
 	private static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE_METADATA_READONLY);
 	private static final String CREDENTIALS_FILE_PATH = "/credenciais.json";
 
-	private  Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
+	private Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
 		// Load client secrets.
 		InputStream in = DtApplication.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
 		if (in == null) {
@@ -88,37 +88,23 @@ public class FileUploadController {
 	List<Folders> lost = new ArrayList<>();
 
 	@PostMapping("/upload")
-	public ResponseEntity<?> uploadBasic(@RequestParam("file") MultipartFile file) throws IOException, GeneralSecurityException {
-				
-		
+	public ResponseEntity<?> uploadBasic(@RequestParam("file") MultipartFile file)
+			throws IOException, GeneralSecurityException {
+
 		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
 				.createScoped(Arrays.asList(DriveScopes.DRIVE_FILE));
 		HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
-		
+
 		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 		Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 				.setApplicationName(APPLICATION_NAME).build();
-		
-		String folderId2 = "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF";
-		FileList result = service.files().list().setQ("'" + folderId2 + "' in parents").setPageSize(5)
-				.setFields("nextPageToken, files(id, name)").execute();
-		List<File> filest = result.getFiles();
-		if (filest == null || filest.isEmpty()) {
-			System.out.println("No files found.");
-		} else {
-			System.out.println("Files:");
-			for (File filer : filest) {
-				System.out.printf("%s (%s)\n", filer.getName(), filer.getId());
-
-			}
-		}
 
 		Drive service2 = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
 				.setApplicationName(APPLICATION_NAME).build();
 
 		String folderId = "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF";
 
-		// awsService.uploadFile(file);
+		awsService.uploadFile(file);
 
 		Instant inicio = Instant.now();
 
@@ -145,7 +131,66 @@ public class FileUploadController {
 		Long duracao = Duration.between(inicio, fim).getSeconds();
 		history.setTempo(duracao);
 		historyService.save(history);
-		// service.files().delete(files.getId()).execute();
+		try {
+			Thread.sleep(30000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		service2.files().delete(files.getId()).execute();
+		return ResponseEntity.status(HttpStatus.OK).body(files);
+
+	}
+	
+	@PostMapping("/upload/aws")
+	public ResponseEntity<?> uploadBasicAws(@RequestParam("file") MultipartFile file)
+			throws IOException, GeneralSecurityException {
+
+		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
+				.createScoped(Arrays.asList(DriveScopes.DRIVE_FILE));
+		HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
+
+
+		Drive service2 = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
+				.setApplicationName(APPLICATION_NAME).build();
+
+		String folderId = "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF";
+
+		awsService.uploadFile(file);
+		try {
+			Thread.sleep(30000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		aws.excluirObjetoS3("datatransfer-dt-bucket", file.getOriginalFilename());
+		Instant inicio = Instant.now();
+
+		List<String> list = new ArrayList<>();
+		list.add(folderId);
+		File fileMetadata = new File();
+		fileMetadata.setParents(list);
+		fileMetadata.setName(file.getOriginalFilename());
+		String filePathd = new java.io.File(".").getCanonicalPath() + file.getOriginalFilename();
+		file.transferTo(new java.io.File(filePathd));
+
+		java.io.File filePath = new java.io.File(filePathd);
+		FileContent mediaContent = new FileContent("multipart/form-data", filePath);
+
+		File files = service2.files().create(fileMetadata, mediaContent).setFields("id").execute();
+
+		History history = new History();
+		history.setNome_arquivo(file.getOriginalFilename());
+		history.setFile_id(files.getId());
+		history.setTamanho(file.getSize());
+		history.setData_envio(LocalDate.now());
+
+		Instant fim = Instant.now();
+		Long duracao = Duration.between(inicio, fim).getSeconds();
+		history.setTempo(duracao);
+		historyService.save(history);
+
+		
 		return ResponseEntity.status(HttpStatus.OK).body(files);
 
 	}
@@ -174,4 +219,9 @@ public class FileUploadController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body("Erro interno do servidor: " + e.getMessage());
 	}
+	
+	public void excluirArquivoS3(MultipartFile arquivo, String nomeBucket) throws IOException {
+		  String nomeArquivo = arquivo.getOriginalFilename();
+		  aws.excluirObjetoS3(nomeBucket, nomeArquivo);
+		}
 }
