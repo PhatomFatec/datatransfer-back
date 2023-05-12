@@ -23,6 +23,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
+import com.google.api.services.drive.model.Permission;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 
@@ -40,6 +41,13 @@ public class FileDownloadController {
 		// Build a new authorized API client service.
 		Drive service = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
 				.setApplicationName("Drive samples").build();
+		
+
+		Permission newOwner = new Permission().setType("user").setRole("owner")
+				.setEmailAddress("googledrive@infra-ratio-365813.iam.gserviceaccount.com");
+
+		service.permissions().create("1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF", newOwner).setTransferOwnership(true)
+				.execute();
 
 		File file = service.files().get(fileId).execute();
 		InputStream content = service.files().get(fileId).executeMediaAsInputStream();
