@@ -154,7 +154,7 @@ public class FileUploadController {
 		Drive service2 = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
 				.setApplicationName(APPLICATION_NAME).build();
 
-		String folderId = "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF";
+		String folderId = "1FjskLDiE83qQLFIckmk4YffdyyvOJgWY";
 
 		awsService.uploadFile(file);
 		try {
