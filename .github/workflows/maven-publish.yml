@@ -17,4 +17,3 @@ jobs:
         java-version: '11'
     - name: run tests with Maven
       run: mvn test
-
