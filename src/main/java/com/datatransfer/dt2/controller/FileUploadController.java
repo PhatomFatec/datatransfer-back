@@ -1,9 +1,11 @@
 package com.datatransfer.dt2.controller;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
@@ -16,6 +18,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,7 +28,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ListObjectsV2Request;
+import com.amazonaws.services.s3.model.ListObjectsV2Result;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.datatransfer.dt2.DtApplication;
+import com.datatransfer.dt2.configs.CustomMultipartFile;
 import com.datatransfer.dt2.models.Folders;
 import com.datatransfer.dt2.models.History;
 import com.datatransfer.dt2.services.AWSS3Service;
@@ -45,7 +54,6 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
-import com.google.api.services.drive.model.FileList;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 
@@ -61,6 +69,9 @@ public class FileUploadController {
 
 	@Autowired
 	private HistoryService historyService;
+	
+	@Autowired
+	private AmazonS3 amazonS3Client;
 
 	private static final String APPLICATION_NAME = "Google Drive API Java Quickstart";
 	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
@@ -224,4 +235,96 @@ public class FileUploadController {
 		  String nomeArquivo = arquivo.getOriginalFilename();
 		  aws.excluirObjetoS3(nomeBucket, nomeArquivo);
 		}
+	
+	@PostMapping("/upload/google")
+	public ResponseEntity<?> uploadFileGoogleDrive(@RequestParam("file") MultipartFile file)
+			throws IOException, GeneralSecurityException {
+
+		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
+				.createScoped(Arrays.asList(DriveScopes.DRIVE_FILE));
+		HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
+
+		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+		Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+				.setApplicationName(APPLICATION_NAME).build();
+
+		Drive service2 = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
+				.setApplicationName(APPLICATION_NAME).build();
+
+		String folderId = "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF";
+
+		Instant inicio = Instant.now();
+
+		List<String> list = new ArrayList<>();
+		list.add(folderId);
+		File fileMetadata = new File();
+		fileMetadata.setParents(list);
+		fileMetadata.setName(file.getOriginalFilename());
+		String filePathd = new java.io.File(".").getCanonicalPath() + file.getOriginalFilename();
+		file.transferTo(new java.io.File(filePathd));
+
+		java.io.File filePath = new java.io.File(filePathd);
+		FileContent mediaContent = new FileContent("multipart/form-data", filePath);
+
+		File files = service2.files().create(fileMetadata, mediaContent).setFields("id").execute();
+
+		History history = new History();
+		history.setNome_arquivo(file.getOriginalFilename());
+		history.setFile_id(files.getId());
+		history.setTamanho(file.getSize());
+		history.setData_envio(LocalDate.now());
+
+		Instant fim = Instant.now();
+		Long duracao = Duration.between(inicio, fim).getSeconds();
+		history.setTempo(duracao);
+		historyService.save(history);
+		try {
+			Thread.sleep(30000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return ResponseEntity.status(HttpStatus.OK).body(files);
+
+	}
+	
+	@GetMapping("/aws/{bucketName}")
+    public void downloadAllFilesFromS3(@PathVariable String bucketName) throws GeneralSecurityException {
+        ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request().withBucketName(bucketName);
+        ListObjectsV2Result listObjectsResult;
+
+        do {
+            listObjectsResult = amazonS3Client.listObjectsV2(listObjectsRequest);
+            for (S3ObjectSummary objectSummary : listObjectsResult.getObjectSummaries()) {
+                String key = objectSummary.getKey();
+                String destinationDirectory = "/dt/src/main/resources/temp_files";
+                String destinationFilePath = destinationDirectory + key;
+
+                java.io.File destinationFile = new java.io.File(destinationFilePath);
+
+                try {
+                	amazonS3Client.getObject(new GetObjectRequest(bucketName, key), destinationFile);
+
+                	try (FileInputStream fileInputStream = new FileInputStream(destinationFile)){
+                	MultipartFile fileN = new CustomMultipartFile(destinationFile);
+                    uploadFileGoogleDrive(fileN);
+                    String[] name = fileN.getOriginalFilename().split("temp_files");
+                    aws.excluirObjetoS3(bucketName, name[1]);
+                	}
+                	
+                    Files.deleteIfExists(destinationFile.toPath());
+                    
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            listObjectsRequest.setContinuationToken(listObjectsResult.getNextContinuationToken());
+        } while (listObjectsResult.isTruncated());
+    }
+	
+	@Scheduled(fixedRate = 10000) // 1 hora = 3.600.000 milissegundos
+	public void scheduleApiCall() throws GeneralSecurityException {
+		downloadAllFilesFromS3("datatransfer-dt-bucket");
+		System.out.println("take my body");
+	}
 }
