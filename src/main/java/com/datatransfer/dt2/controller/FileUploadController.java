@@ -39,6 +39,7 @@ import com.datatransfer.dt2.models.Folders;
 import com.datatransfer.dt2.models.History;
 import com.datatransfer.dt2.services.AWSS3Service;
 import com.datatransfer.dt2.services.HistoryService;
+import com.datatransfer.dt2.services.ScheduleConfigService;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
@@ -63,15 +64,19 @@ public class FileUploadController {
 
 	@Autowired
 	private UploadFileAwsController awsService;
-	
+
 	@Autowired
 	private AWSS3Service aws;
 
 	@Autowired
 	private HistoryService historyService;
-	
+
 	@Autowired
 	private AmazonS3 amazonS3Client;
+
+    @Autowired
+    private ScheduleConfigService scheduleConfigService;
+	
 
 	private static final String APPLICATION_NAME = "Google Drive API Java Quickstart";
 	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
@@ -152,7 +157,7 @@ public class FileUploadController {
 		return ResponseEntity.status(HttpStatus.OK).body(files);
 
 	}
-	
+
 	@PostMapping("/upload/aws")
 	public ResponseEntity<?> uploadBasicAws(@RequestParam("file") MultipartFile file)
 			throws IOException, GeneralSecurityException {
@@ -160,7 +165,6 @@ public class FileUploadController {
 		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
 				.createScoped(Arrays.asList(DriveScopes.DRIVE_FILE));
 		HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
-
 
 		Drive service2 = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
 				.setApplicationName(APPLICATION_NAME).build();
@@ -201,7 +205,6 @@ public class FileUploadController {
 		history.setTempo(duracao);
 		historyService.save(history);
 
-		
 		return ResponseEntity.status(HttpStatus.OK).body(files);
 
 	}
@@ -230,12 +233,12 @@ public class FileUploadController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body("Erro interno do servidor: " + e.getMessage());
 	}
-	
+
 	public void excluirArquivoS3(MultipartFile arquivo, String nomeBucket) throws IOException {
-		  String nomeArquivo = arquivo.getOriginalFilename();
-		  aws.excluirObjetoS3(nomeBucket, nomeArquivo);
-		}
-	
+		String nomeArquivo = arquivo.getOriginalFilename();
+		aws.excluirObjetoS3(nomeBucket, nomeArquivo);
+	}
+
 	@PostMapping("/upload/google")
 	public ResponseEntity<?> uploadFileGoogleDrive(@RequestParam("file") MultipartFile file)
 			throws IOException, GeneralSecurityException {
@@ -287,44 +290,44 @@ public class FileUploadController {
 		return ResponseEntity.status(HttpStatus.OK).body(files);
 
 	}
-	
+
 	@GetMapping("/aws/{bucketName}")
-    public void downloadAllFilesFromS3(@PathVariable String bucketName) throws GeneralSecurityException {
-        ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request().withBucketName(bucketName);
-        ListObjectsV2Result listObjectsResult;
+	public void downloadAllFilesFromS3(@PathVariable String bucketName) throws GeneralSecurityException {
+		ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request().withBucketName(bucketName);
+		ListObjectsV2Result listObjectsResult;
 
-        do {
-            listObjectsResult = amazonS3Client.listObjectsV2(listObjectsRequest);
-            for (S3ObjectSummary objectSummary : listObjectsResult.getObjectSummaries()) {
-                String key = objectSummary.getKey();
-                String destinationDirectory = "/dt/src/main/resources/temp_files";
-                String destinationFilePath = destinationDirectory + key;
+		do {
+			listObjectsResult = amazonS3Client.listObjectsV2(listObjectsRequest);
+			for (S3ObjectSummary objectSummary : listObjectsResult.getObjectSummaries()) {
+				String key = objectSummary.getKey();
+				String destinationDirectory = "/dt/src/main/resources/temp_files";
+				String destinationFilePath = destinationDirectory + key;
 
-                java.io.File destinationFile = new java.io.File(destinationFilePath);
+				java.io.File destinationFile = new java.io.File(destinationFilePath);
 
-                try {
-                	amazonS3Client.getObject(new GetObjectRequest(bucketName, key), destinationFile);
+				try {
+					amazonS3Client.getObject(new GetObjectRequest(bucketName, key), destinationFile);
 
-                	try (FileInputStream fileInputStream = new FileInputStream(destinationFile)){
-                	MultipartFile fileN = new CustomMultipartFile(destinationFile);
-                    uploadFileGoogleDrive(fileN);
-                    String[] name = fileN.getOriginalFilename().split("temp_files");
-                    aws.excluirObjetoS3(bucketName, name[1]);
-                	}
-                	
-                    Files.deleteIfExists(destinationFile.toPath());
-                    
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            listObjectsRequest.setContinuationToken(listObjectsResult.getNextContinuationToken());
-        } while (listObjectsResult.isTruncated());
-    }
+					try (FileInputStream fileInputStream = new FileInputStream(destinationFile)) {
+						MultipartFile fileN = new CustomMultipartFile(destinationFile);
+						uploadFileGoogleDrive(fileN);
+						String[] name = fileN.getOriginalFilename().split("temp_files");
+						aws.excluirObjetoS3(bucketName, name[1]);
+					}
+					Files.deleteIfExists(destinationFile.toPath());
+
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			listObjectsRequest.setContinuationToken(listObjectsResult.getNextContinuationToken());
+		} while (listObjectsResult.isTruncated());
+	}
+
 	
-	@Scheduled(fixedRate = 10000) // 1 hora = 3.600.000 milissegundos
+	@Scheduled(fixedDelayString = "#{scheduleConfigService.getFixedRateFromDatabase()}") // 1 hora = 3.600.000 milissegundos
 	public void scheduleApiCall() throws GeneralSecurityException {
-		downloadAllFilesFromS3("datatransfer-dt-bucket");
 		System.out.println("take my body");
+		downloadAllFilesFromS3("datatransfer-dt-bucket");
 	}
 }
