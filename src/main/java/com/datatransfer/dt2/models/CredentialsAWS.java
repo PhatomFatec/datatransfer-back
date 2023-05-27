@@ -19,15 +19,15 @@ import lombok.Setter;
 public class CredentialsAWS {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
 	private String accessKey;
 
 	private String secretKey;
-
+	
 	private String regionName;
-
+	
 	private String bucketName;
+
 
 }

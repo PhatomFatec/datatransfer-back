@@ -35,8 +35,6 @@ import com.google.auth.oauth2.GoogleCredentials;
 @RequestMapping(value = "/files")
 public class FileDownloadController {
 
-	@Autowired
-	private AWSS3Service serviceAws;
 
 	@GetMapping("/{folderId}/{fileId}")
 	public ResponseEntity<?> getFile(@PathVariable String folderId, @PathVariable String fileId) throws IOException {

@@ -1,18 +1,13 @@
 package com.datatransfer.dt2.controller;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,30 +23,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ListObjectsV2Request;
-import com.amazonaws.services.s3.model.ListObjectsV2Result;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.datatransfer.dt2.DtApplication;
-import com.datatransfer.dt2.configs.CustomMultipartFile;
 import com.datatransfer.dt2.models.Folders;
 import com.datatransfer.dt2.models.History;
 import com.datatransfer.dt2.services.AWSS3Service;
+import com.datatransfer.dt2.services.GoogleServices;
 import com.datatransfer.dt2.services.HistoryService;
 import com.datatransfer.dt2.services.ScheduleConfigService;
 import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
-import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
-import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.FileContent;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
@@ -72,7 +56,7 @@ public class FileUploadController {
 	private HistoryService historyService;
 
 	@Autowired
-	private AmazonS3 amazonS3Client;
+	private GoogleServices googleService;
 
     @Autowired
     private ScheduleConfigService scheduleConfigService;
@@ -80,26 +64,6 @@ public class FileUploadController {
 
 	private static final String APPLICATION_NAME = "Google Drive API Java Quickstart";
 	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-	private static final String TOKENS_DIRECTORY_PATH = "tokens";
-	private static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE_METADATA_READONLY);
-	private static final String CREDENTIALS_FILE_PATH = "/credenciais.json";
-
-	private Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
-		// Load client secrets.
-		InputStream in = DtApplication.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
-		if (in == null) {
-			throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
-		}
-		GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
-
-		GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(HTTP_TRANSPORT, JSON_FACTORY,
-				clientSecrets, SCOPES)
-				.setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
-				.setAccessType("offline").build();
-		LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
-		Credential credential = new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
-		return credential;
-	}
 
 	List<Folders> lost = new ArrayList<>();
 
@@ -107,16 +71,13 @@ public class FileUploadController {
 	public ResponseEntity<?> uploadBasic(@RequestParam("file") MultipartFile file)
 			throws IOException, GeneralSecurityException {
 
-		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
-				.createScoped(Arrays.asList(DriveScopes.DRIVE_FILE));
-		HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
-
 		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-		Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+
+		Credential credentials = googleService.getCredentials(HTTP_TRANSPORT);
+
+		Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, credentials)
 				.setApplicationName(APPLICATION_NAME).build();
 
-		Drive service2 = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
-				.setApplicationName(APPLICATION_NAME).build();
 
 		String folderId = "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF";
 
@@ -135,7 +96,7 @@ public class FileUploadController {
 		java.io.File filePath = new java.io.File(filePathd);
 		FileContent mediaContent = new FileContent("multipart/form-data", filePath);
 
-		File files = service2.files().create(fileMetadata, mediaContent).setFields("id").execute();
+		File files = service.files().create(fileMetadata, mediaContent).setFields("id").execute();
 
 		History history = new History();
 		history.setNome_arquivo(file.getOriginalFilename());
@@ -153,7 +114,7 @@ public class FileUploadController {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		service2.files().delete(files.getId()).execute();
+		service.files().delete(files.getId()).execute();
 		return ResponseEntity.status(HttpStatus.OK).body(files);
 
 	}
@@ -242,41 +203,13 @@ public class FileUploadController {
 	@PostMapping("/upload/google")
 	public ResponseEntity<?> uploadFileGoogleDrive(@RequestParam("file") MultipartFile file)
 			throws IOException, GeneralSecurityException {
-
-		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
-				.createScoped(Arrays.asList(DriveScopes.DRIVE_FILE));
-		HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
-
-		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-		Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-				.setApplicationName(APPLICATION_NAME).build();
-
-		Drive service2 = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
-				.setApplicationName(APPLICATION_NAME).build();
-
-		String folderId = "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF";
-
 		Instant inicio = Instant.now();
-
-		List<String> list = new ArrayList<>();
-		list.add(folderId);
-		File fileMetadata = new File();
-		fileMetadata.setParents(list);
-		fileMetadata.setName(file.getOriginalFilename());
-		String filePathd = new java.io.File(".").getCanonicalPath() + file.getOriginalFilename();
-		file.transferTo(new java.io.File(filePathd));
-
-		java.io.File filePath = new java.io.File(filePathd);
-		FileContent mediaContent = new FileContent("multipart/form-data", filePath);
-
-		File files = service2.files().create(fileMetadata, mediaContent).setFields("id").execute();
-
+		File files = googleService.uploadFileToDrive(file);
 		History history = new History();
 		history.setNome_arquivo(file.getOriginalFilename());
 		history.setFile_id(files.getId());
 		history.setTamanho(file.getSize());
 		history.setData_envio(LocalDate.now());
-
 		Instant fim = Instant.now();
 		Long duracao = Duration.between(inicio, fim).getSeconds();
 		history.setTempo(duracao);
@@ -293,35 +226,7 @@ public class FileUploadController {
 
 	@GetMapping("/aws/{bucketName}")
 	public void downloadAllFilesFromS3(@PathVariable String bucketName) throws GeneralSecurityException {
-		ListObjectsV2Request listObjectsRequest = new ListObjectsV2Request().withBucketName(bucketName);
-		ListObjectsV2Result listObjectsResult;
-
-		do {
-			listObjectsResult = amazonS3Client.listObjectsV2(listObjectsRequest);
-			for (S3ObjectSummary objectSummary : listObjectsResult.getObjectSummaries()) {
-				String key = objectSummary.getKey();
-				String destinationDirectory = "/dt/src/main/resources/temp_files";
-				String destinationFilePath = destinationDirectory + key;
-
-				java.io.File destinationFile = new java.io.File(destinationFilePath);
-
-				try {
-					amazonS3Client.getObject(new GetObjectRequest(bucketName, key), destinationFile);
-
-					try (FileInputStream fileInputStream = new FileInputStream(destinationFile)) {
-						MultipartFile fileN = new CustomMultipartFile(destinationFile);
-						uploadFileGoogleDrive(fileN);
-						String[] name = fileN.getOriginalFilename().split("temp_files");
-						aws.excluirObjetoS3(bucketName, name[1]);
-					}
-					Files.deleteIfExists(destinationFile.toPath());
-
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-			listObjectsRequest.setContinuationToken(listObjectsResult.getNextContinuationToken());
-		} while (listObjectsResult.isTruncated());
+		aws.downloadAllFilesFromS3(bucketName);
 	}
 
 	
