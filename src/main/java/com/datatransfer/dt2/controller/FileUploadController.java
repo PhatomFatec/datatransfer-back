@@ -1,6 +1,5 @@
 package com.datatransfer.dt2.controller;
 
-
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
@@ -29,12 +28,9 @@ import com.datatransfer.dt2.services.AWSS3Service;
 import com.datatransfer.dt2.services.GoogleServices;
 import com.datatransfer.dt2.services.HistoryService;
 import com.datatransfer.dt2.services.ScheduleConfigService;
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.FileContent;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
@@ -58,64 +54,20 @@ public class FileUploadController {
 	@Autowired
 	private GoogleServices googleService;
 
-    @Autowired
-    private ScheduleConfigService scheduleConfigService;
-	
+	@Autowired
+	private ScheduleConfigService scheduleConfigService;
 
 	private static final String APPLICATION_NAME = "Google Drive API Java Quickstart";
-	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-
 	List<Folders> lost = new ArrayList<>();
 
 	@PostMapping("/upload")
 	public ResponseEntity<?> uploadBasic(@RequestParam("file") MultipartFile file)
 			throws IOException, GeneralSecurityException {
 
-		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+		aws.uploadFileToS3AndGetUrl(file, file.getOriginalFilename());
+		googleService.uploadFileToDrive(file, "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF");
 
-		Credential credentials = googleService.getCredentials(HTTP_TRANSPORT);
-
-		Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, credentials)
-				.setApplicationName(APPLICATION_NAME).build();
-
-
-		String folderId = "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF";
-
-		awsService.uploadFile(file);
-
-		Instant inicio = Instant.now();
-
-		List<String> list = new ArrayList<>();
-		list.add(folderId);
-		File fileMetadata = new File();
-		fileMetadata.setParents(list);
-		fileMetadata.setName(file.getOriginalFilename());
-		String filePathd = new java.io.File(".").getCanonicalPath() + file.getOriginalFilename();
-		file.transferTo(new java.io.File(filePathd));
-
-		java.io.File filePath = new java.io.File(filePathd);
-		FileContent mediaContent = new FileContent("multipart/form-data", filePath);
-
-		File files = service.files().create(fileMetadata, mediaContent).setFields("id").execute();
-
-		History history = new History();
-		history.setNome_arquivo(file.getOriginalFilename());
-		history.setFile_id(files.getId());
-		history.setTamanho(file.getSize());
-		history.setData_envio(LocalDate.now());
-
-		Instant fim = Instant.now();
-		Long duracao = Duration.between(inicio, fim).getSeconds();
-		history.setTempo(duracao);
-		historyService.save(history);
-		try {
-			Thread.sleep(30000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		service.files().delete(files.getId()).execute();
-		return ResponseEntity.status(HttpStatus.OK).body(files);
+		return ResponseEntity.status(HttpStatus.OK).body(googleService.uploadFileToDrive(file, "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF"));
 
 	}
 
@@ -204,7 +156,7 @@ public class FileUploadController {
 	public ResponseEntity<?> uploadFileGoogleDrive(@RequestParam("file") MultipartFile file)
 			throws IOException, GeneralSecurityException {
 		Instant inicio = Instant.now();
-		File files = googleService.uploadFileToDrive(file);
+		File files = googleService.uploadFileToDrive(file, "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF");
 		History history = new History();
 		history.setNome_arquivo(file.getOriginalFilename());
 		history.setFile_id(files.getId());
@@ -229,10 +181,8 @@ public class FileUploadController {
 		aws.downloadAllFilesFromS3(bucketName);
 	}
 
-	
-	@Scheduled(fixedDelayString = "#{scheduleConfigService.getFixedRateFromDatabase()}") // 1 hora = 3.600.000 milissegundos
+	@Scheduled(fixedDelayString = "#{scheduleConfigService.getFixedRateFromDatabase()}") // 1 hora = 3.600.000																					// milissegundos
 	public void scheduleApiCall() throws GeneralSecurityException {
-		System.out.println("take my body");
 		downloadAllFilesFromS3("datatransfer-dt-bucket");
 	}
 }

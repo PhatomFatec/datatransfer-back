@@ -68,7 +68,7 @@ public class AWSS3Service {
 
 					try (FileInputStream fileInputStream = new FileInputStream(destinationFile)) {
 						MultipartFile fileN = new CustomMultipartFile(destinationFile);
-						googleService.uploadFileToDrive(fileN);
+						googleService.uploadFileToDrive(fileN, "1FjskLDiE83qQLFIckmk4YffdyyvOJgWY");
 						String[] name = fileN.getOriginalFilename().split("temp_files");
 						excluirObjetoS3(bucketName, name[1]);
 					}
