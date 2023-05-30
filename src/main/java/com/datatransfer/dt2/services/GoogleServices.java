@@ -91,6 +91,21 @@ public class GoogleServices {
 		driveService.files().get(fileId).executeMediaAndDownloadTo(outputStream);
 	}
 
+	public void deleteFileFromDrive(String fileId) throws IOException, GeneralSecurityException {
+		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
+				.createScoped(Arrays.asList(DriveScopes.DRIVE_FILE));
+		HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
+
+		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+		Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+				.setApplicationName(APPLICATION_NAME).build();
+
+		Drive service2 = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
+				.setApplicationName(APPLICATION_NAME).build();
+
+		service2.files().delete(fileId).execute();
+	}
+
 	public File uploadFileToDrive(MultipartFile file, String folder) throws IOException, GeneralSecurityException {
 		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
 				.createScoped(Arrays.asList(DriveScopes.DRIVE_FILE));
@@ -135,8 +150,6 @@ public class GoogleServices {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-		service.files().delete(files.getId()).execute();
 		return files;
 	}
 }

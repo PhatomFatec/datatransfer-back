@@ -65,9 +65,11 @@ public class FileUploadController {
 			throws IOException, GeneralSecurityException {
 
 		aws.uploadFileToS3AndGetUrl(file, file.getOriginalFilename());
-		googleService.uploadFileToDrive(file, "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF");
+		File files = googleService.uploadFileToDrive(file, "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF");
+		googleService.deleteFileFromDrive(files.getId());
 
-		return ResponseEntity.status(HttpStatus.OK).body(googleService.uploadFileToDrive(file, "1LFzz6RB4d-ePzRmyzVUC8zebcrYHzDTF"));
+		return ResponseEntity.status(HttpStatus.OK)
+				.body(files);
 
 	}
 
@@ -86,7 +88,7 @@ public class FileUploadController {
 
 		awsService.uploadFile(file);
 		try {
-			Thread.sleep(30000);
+			Thread.sleep(15000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -167,7 +169,7 @@ public class FileUploadController {
 		history.setTempo(duracao);
 		historyService.save(history);
 		try {
-			Thread.sleep(30000);
+			Thread.sleep(15000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -181,8 +183,10 @@ public class FileUploadController {
 		aws.downloadAllFilesFromS3(bucketName);
 	}
 
-	@Scheduled(fixedDelayString = "#{scheduleConfigService.getFixedRateFromDatabase()}") // 1 hora = 3.600.000																					// milissegundos
+	@Scheduled(fixedDelayString = "#{scheduleConfigService.getFixedRateFromDatabase()}") // 1 hora = 3.600.000 //
+																							// milissegundos
 	public void scheduleApiCall() throws GeneralSecurityException {
+		System.out.println("Download s3 to Google Drive");
 		downloadAllFilesFromS3("datatransfer-dt-bucket");
 	}
 }
