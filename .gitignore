@@ -32,6 +32,7 @@ build/
 ### VS Code ###
 .vscode/
 
-/src/main/resources/
+/src/main/resources/credenciais.json
+
 /.apt_generated_tests/
 /tokens
