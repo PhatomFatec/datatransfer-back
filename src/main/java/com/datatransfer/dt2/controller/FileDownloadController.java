@@ -3,10 +3,12 @@ package com.datatransfer.dt2.controller;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.datatransfer.dt2.services.AWSS3Service;
 import com.google.api.client.http.FileContent;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -32,6 +35,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 @RequestMapping(value = "/files")
 public class FileDownloadController {
 
+
 	@GetMapping("/{folderId}/{fileId}")
 	public ResponseEntity<?> getFile(@PathVariable String folderId, @PathVariable String fileId) throws IOException {
 		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
@@ -41,7 +45,6 @@ public class FileDownloadController {
 		// Build a new authorized API client service.
 		Drive service = new Drive.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(), requestInitializer)
 				.setApplicationName("Drive samples").build();
-		
 
 		Permission newOwner = new Permission().setType("user").setRole("owner")
 				.setEmailAddress("googledrive@infra-ratio-365813.iam.gserviceaccount.com");

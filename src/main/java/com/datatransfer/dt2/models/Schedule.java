@@ -1,9 +1,12 @@
 package com.datatransfer.dt2.models;
 
+import java.io.Serializable;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -11,22 +14,21 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
+@AllArgsConstructor
+@NoArgsConstructor
 @EqualsAndHashCode
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Table(name = "schedule_test")
 @Entity
-public class CredentialsAWS {
-
+public class Schedule implements Serializable{/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
 	@Id
 	private Long id;
-
-	private String accessKey;
-
-	private String secretKey;
-
-	private String regionName;
-
-	private String bucketName;
+	
+	private Integer time;
+	
 
 }

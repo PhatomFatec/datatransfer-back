@@ -1,10 +1,12 @@
 package com.datatransfer.dt2.controller;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,18 +21,17 @@ import com.datatransfer.dt2.repositories.CredentialsAWSRepository;
 import com.datatransfer.dt2.services.CredentialService;
 import com.google.gson.Gson;
 
-
+@CrossOrigin
 @RestController
 @RequestMapping(value = "/credentials")
 public class CredentialsController {
-	
+
 	@Autowired
 	private CredentialService service;
-	
-	
+
 	@Autowired
 	private CredentialsAWSRepository credAwsRepo;
-	
+
 	@RequestMapping(method = RequestMethod.GET)
 	public ResponseEntity<List<Credentials>> findAll() {
 		List<Credentials> credentials = service.findAll();
@@ -38,14 +39,14 @@ public class CredentialsController {
 	}
 
 	private void saveToFile(String json) {
-        try {
-            FileWriter fileWriter = new FileWriter("src/main/resources/credenciais.json");
-            fileWriter.write("{\"web\":" +json +"}");
-            fileWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+		try {
+			FileWriter fileWriter = new FileWriter("src/main/resources/credenciais.json");
+			fileWriter.write("{\"web\":" + json + "}");
+			fileWriter.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	@GetMapping(value = "/{id}")
 	public ResponseEntity<Credentials> findById(@PathVariable Long id) {
@@ -58,11 +59,11 @@ public class CredentialsController {
 		Credentials cred = service.FromDTO(obj);
 		cred = service.save(cred);
 		Gson gson = new Gson();
-        String json = gson.toJson(obj);
-        saveToFile(json);
+		String json = gson.toJson(obj);
+		saveToFile(json);
 		return ResponseEntity.ok().body(obj);
 	}
-	
+
 	@PostMapping(value = "/aws")
 	public ResponseEntity<CredentialsAWS> saveCredAws(@RequestBody CredentialsAWS obj) {
 		CredentialsAWS cred = credAwsRepo.save(obj);
