@@ -24,10 +24,9 @@ public class CredentialsAWS {
 	private String accessKey;
 
 	private String secretKey;
-	
-	private String regionName;
-	
-	private String bucketName;
 
+	private String regionName;
+
+	private String bucketName;
 
 }

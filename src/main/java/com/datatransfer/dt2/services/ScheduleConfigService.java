@@ -13,14 +13,14 @@ public class ScheduleConfigService {
 
 	@Autowired
 	private ScheduleRepository scheduleConfigRepository;
-	
+
 	@Autowired
 	private ApplicationEventPublisher eventPublisher;
 
 	public long getFixedRateFromDatabase() {
 		Schedule scheduleConfig = scheduleConfigRepository.findById(1L)
 				.orElseThrow(() -> new RuntimeException("Configuração não encontrada"));
-		return scheduleConfig.getTime() * 1000;
+		return scheduleConfig.getTime();
 	}
 
 	public void updateFixedDelayProperty() {
